@@ -1,0 +1,16 @@
+[
+  {
+    "name": "fred",
+    "status": "empty",
+    "rows": 0,
+    "as_of": "",
+    "message": "source returned no rows; using cache"
+  },
+  {
+    "name": "open_meteo",
+    "status": "empty",
+    "rows": 0,
+    "as_of": "",
+    "message": "RuntimeError: GET failed after 3 tries: https://api.open-meteo.com/v1/forecast :: 403 Client Error: Forbidden for url: https://api.open-meteo.com/v1/forecast?latitude=29.76&longitude=-95.37&hourly=temperature_2m%2Cwind_speed_100m%2Cshortwave_radiation&wind_speed_unit=ms&forecast_days=1&timezone=UTC"
+  }
+]

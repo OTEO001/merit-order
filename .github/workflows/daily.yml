@@ -1,0 +1,96 @@
+# Runs the Merit Order pipeline once a day, commits the refreshed data + briefing
+# back to the repo, and publishes the rebuilt dashboard to GitHub Pages.
+#
+# Design notes:
+#   * The pipeline NEVER raises on a data-source failure (each source degrades to
+#     last-known-good), so a bad upstream day still produces a valid site.
+#   * Secrets are injected as env vars only at runtime — never written to the repo.
+#   * Two jobs: `build` (ingest + commit + upload artifact) then `deploy` (Pages).
+name: daily
+
+on:
+  schedule:
+    # 23:00 UTC = 07:00 Singapore (next day). Your inbox digest + the refreshed
+    # dashboard land first thing each morning. GitHub cron is best-effort and can
+    # lag a few minutes under load.
+    - cron: "0 23 * * *"
+  workflow_dispatch: {}   # lets you trigger a run by hand from the Actions tab
+
+# Allow the run to commit data back AND publish Pages via OIDC.
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# If a manual run overlaps the nightly one, let the in-progress run finish
+# (don't cancel) so a half-written commit never reaches Pages.
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the daily pipeline
+        env:
+          # FRED is the primary backbone (macro + energy benchmarks) — the one key
+          # this product needs. The rest are optional; a missing key simply disables
+          # that source and the run still succeeds.
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Daily email digest (optional; sends only if these are set).
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          # Feature toggles (override config defaults without touching code).
+          ENABLE_EIA: ${{ vars.ENABLE_EIA || 'false' }}
+          ENABLE_ENTSOE: ${{ vars.ENABLE_ENTSOE || 'false' }}
+          ENABLE_SINGAPORE: ${{ vars.ENABLE_SINGAPORE || 'false' }}
+          ENABLE_LLM_POLISH: ${{ vars.ENABLE_LLM_POLISH || 'false' }}
+          ASSUMED_CARBON: ${{ vars.ASSUMED_CARBON || '0.0' }}
+          ASSUMED_COAL: ${{ vars.ASSUMED_COAL || '3.0' }}
+        run: python pipeline.py
+
+      - name: Commit refreshed data + briefing
+        run: |
+          git config user.name  "merit-order-bot"
+          git config user.email "actions@users.noreplace.github.com"
+          git add data/series.csv data/_freshness.json docs/
+          # Nothing to commit on a no-change day is success, not failure.
+          if git diff --staged --quiet; then
+            echo "No data changes today."
+          else
+            git commit -m "data: daily refresh $(date -u +%Y-%m-%d) [skip ci]"
+            git push
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
