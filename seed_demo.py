@@ -96,6 +96,14 @@ def main() -> None:
     add("eq.sp500",  _ar1(n, 5800, 5800, 35, 5200, 6200), "index")
     add("eq.nasdaq", _ar1(n, 18500, 18500, 120, 16500, 20000), "index")
 
+    # Live power markets (DE day-ahead in EUR, SG USEP/demand in native units)
+    de_lu = _ar1(n, 95, 95, 6, 40, 180)
+    sg_usep = _ar1(n, 165, 165, 12, 90, 320)
+    sg_demand = _ar1(n, 6900, 6900, 180, 6000, 7600)
+    add("power.de_lu", de_lu, "EUR/MWh")
+    add("power.sg_usep", sg_usep, "SGD/MWh")
+    add("power.sg_demand", sg_demand, "MW")
+
     # --- Derived series, backfilled day-by-day so the preview shows full history.
     # (In production these accumulate one point per run; here we precompute them so
     # sparklines and trends are populated immediately.) ---
@@ -117,6 +125,18 @@ def main() -> None:
     add("derived.fuel_switch_carbon", [round(v, 2) for v in switch], "USD/tonne")
     add("derived.curve_2s10s", [round(v, 1) for v in slope], "bp")
     add("derived.solar_lcoe", [round(v, 2) for v in lcoe], "USD/MWh")
+
+    from analytics.spreads import clean_spark_spread
+    de_spark = [clean_spark_spread(p, config.ASSUMED_TTF_EUR_PER_MWH,
+                                   1.0 / config.SPARK_EFFICIENCY_EU,
+                                   config.ASSUMED_EUA_EUR_PER_TONNE,
+                                   config.EF_GAS_TONNE_PER_MWH) for p in de_lu]
+    sg_spark = [clean_spark_spread(p, config.ASSUMED_SG_GAS_SGD_PER_MMBTU,
+                                   config.HEAT_RATE_CCGT_SG,
+                                   config.ASSUMED_SG_CARBON_SGD_PER_TONNE,
+                                   config.EF_GAS_TONNE_PER_MWH) for p in sg_usep]
+    add("derived.de_spark", [round(v, 2) for v in de_spark], "EUR/MWh")
+    add("derived.sg_spark", [round(v, 2) for v in sg_spark], "SGD/MWh")
 
     df = pd.DataFrame(rows)[COLUMNS]
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)

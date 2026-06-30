@@ -27,7 +27,7 @@ def test_explainers_structure_on_populated_store():
             + _series("oil.brent", [77, 78]) + _series("gas.henry_hub", [3.4, 3.5]))
     ex = build_explainers(_store(rows))
     assert "headline" in ex and ex["headline"]
-    assert len(ex["sections"]) == 5
+    assert len(ex["sections"]) == 6
     for s in ex["sections"]:
         assert {"key", "title", "plain", "today", "matters"} <= set(s)
     assert len(ex["glossary"]) >= 8
@@ -35,7 +35,7 @@ def test_explainers_structure_on_populated_store():
 
 def test_explainers_do_not_crash_on_empty_store():
     ex = build_explainers(_store([]))
-    assert len(ex["sections"]) == 5          # still structured, just with "—" values
+    assert len(ex["sections"]) == 6          # still structured, just with "—" values
     assert isinstance(ex["headline"], str)
 
 

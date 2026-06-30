@@ -189,6 +189,39 @@ def _bridge(store):
     }
 
 
+def _power(store):
+    de_p, de_s = _v(store, "power.de_lu"), _v(store, "derived.de_spark")
+    sg_p, sg_s = _v(store, "power.sg_usep"), _v(store, "derived.sg_spark")
+    sg_d = _v(store, "power.sg_demand")
+
+    parts = []
+    if sg_p is not None:
+        parts.append(f"Singapore's USEP is <b>S${_num(sg_p)}/MWh</b>"
+                     + (f" and system demand {_num(sg_d, 0)} MW" if sg_d is not None else "")
+                     + (f", a clean spark spread of about <b>S${_num(sg_s, 1)}/MWh</b> against assumed "
+                        f"LNG and the S$45/t carbon tax" if sg_s is not None else ""))
+    if de_p is not None:
+        parts.append(f"Germany's day-ahead price is €{_num(de_p)}/MWh"
+                     + (f", a clean spark spread near <b>€{_num(de_s, 1)}/MWh</b>" if de_s is not None else ""))
+    today = ". ".join(p[0].upper() + p[1:] for p in parts) + "." if parts else \
+        "Live power data isn't available right now."
+
+    return {
+        "key": "power", "title": "Live power & spark spreads",
+        "plain": ("A <b>spark spread</b> is a gas plant's gross margin: the electricity price it earns "
+                  "minus the cost of the gas (and carbon) it must burn to make that power. Unlike the "
+                  "CCGT breakeven above — which is an estimate from gas alone — this uses a <i>live</i> "
+                  "wholesale power price, so it's the real-money version of the same idea."),
+        "today": today,
+        "matters": ("A positive spark spread means gas generation is in the money and gas is likely "
+                    "setting the price at the margin; a thin or negative one means cheaper plants — "
+                    "renewables, or coal where it exists — are pushing gas down the merit order. For a "
+                    "solar-plus-storage desk this is the number that says when it pays to generate or "
+                    "discharge into the grid versus hold. Power prices are live; the fuel and carbon "
+                    "inputs are clearly-labelled assumptions, since no free daily feed exists for them."),
+    }
+
+
 GLOSSARY = [
     ("2s10s", "The 10-year Treasury yield minus the 2-year. Positive = normal upward-sloping curve; "
               "negative = 'inverted', a classic recession signal."),
@@ -206,6 +239,10 @@ GLOSSARY = [
                      "(and carbon) it burns to make that power."),
     ("CCGT breakeven", "The power price at which a combined-cycle gas plant exactly covers its fuel "
                        "cost — where it sits in the merit order."),
+    ("USEP", "Uniform Singapore Energy Price — the half-hourly wholesale electricity price for "
+             "Singapore's gas-dominated grid, the price energy withdrawals settle at."),
+    ("Day-ahead price", "The wholesale power price set in an auction the day before delivery, hour by "
+                        "hour. ENTSO-E publishes it for each European bidding zone."),
     ("LCOE", "Levelised cost of energy: the all-in lifetime cost of a power project per MWh, dominated "
              "by upfront capital and therefore very sensitive to interest rates."),
     ("HDD / CDD", "Heating- and cooling-degree-days: how far temperature sits below/above a comfort "
@@ -236,6 +273,6 @@ def _headline(store):
 def build_explainers(store) -> dict:
     return {
         "headline": _headline(store),
-        "sections": [_rates(store), _dollar(store), _risk(store), _energy(store), _bridge(store)],
+        "sections": [_rates(store), _dollar(store), _risk(store), _energy(store), _power(store), _bridge(store)],
         "glossary": [{"term": t, "def": d} for t, d in GLOSSARY],
     }

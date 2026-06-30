@@ -32,8 +32,8 @@ def _env_bool(name: str, default: bool) -> bool:
 ENABLE_EIA = _env_bool("ENABLE_EIA", False)          # optional: EIA-native energy datasets (FRED already covers gas/oil)
 ENABLE_FRED = _env_bool("ENABLE_FRED", True)          # PRIMARY backbone: macro + energy benchmarks (needs one key)
 ENABLE_OPEN_METEO = _env_bool("ENABLE_OPEN_METEO", True)  # weather (no key)
-ENABLE_ENTSOE = _env_bool("ENABLE_ENTSOE", False)     # European power (needs token)
-ENABLE_SINGAPORE = _env_bool("ENABLE_SINGAPORE", False)  # NEMS module (your edge)
+ENABLE_ENTSOE = _env_bool("ENABLE_ENTSOE", False)    # European power off by default; set ENABLE_ENTSOE=true + ENTSOE_TOKEN to enable
+ENABLE_SINGAPORE = _env_bool("ENABLE_SINGAPORE", True)  # Singapore USEP — free community NEMS mirror, no key
 ENABLE_LLM_POLISH = _env_bool("ENABLE_LLM_POLISH", False)  # optional briefing rewrite
 
 # ---------------------------------------------------------------------------
@@ -105,6 +105,28 @@ ASSUMED_COAL_USD_PER_MMBTU = float(os.getenv("ASSUMED_COAL", "3.0"))
 ASSUMED_CARBON_USD_PER_TONNE = float(os.getenv("ASSUMED_CARBON", "0.0"))  # US ~0; EU set ~80
 
 # ---------------------------------------------------------------------------
+# Live power markets (the spark spread).
+#   Europe: ENTSO-E day-ahead price is genuinely live & free (needs a token).
+#     The matching gas (TTF) and carbon (EUA) have no clean free daily feed, so the
+#     spark spread uses the LIVE power price against clearly-labelled gas/carbon
+#     assumptions — exactly the same honesty pattern as the US CCGT breakeven.
+#   Singapore: USEP is the live half-hourly wholesale price via a community NEMS
+#     mirror (the official EMC API is Cloudflare-gated). Provisional, clearly noted.
+# ---------------------------------------------------------------------------
+ENTSOE_ZONE = os.getenv("ENTSOE_ZONE") or "10Y1001A1001A82H"   # DE-LU (Germany), most liquid
+ENTSOE_ZONE_NAME = os.getenv("ENTSOE_ZONE_NAME") or "Germany (DE-LU)"
+SPARK_EFFICIENCY_EU = 0.50                 # CCGT electrical efficiency -> heat rate 1/eff (MWh_th/MWh_e)
+ASSUMED_TTF_EUR_PER_MWH = float(os.getenv("ASSUMED_TTF", "32.0"))   # European gas, EUR/MWh-thermal (assumption)
+ASSUMED_EUA_EUR_PER_TONNE = float(os.getenv("ASSUMED_EUA", "70.0"))  # EU carbon, EUR/tonne (assumption)
+SG_USEP_URL = os.getenv("SG_USEP_URL", "https://nems.sn.sg/api/status.json")
+# Singapore spark-spread inputs — native SGD. SG generates from oil-linked LNG, so an
+# assumed local gas price is used (Henry Hub would badly understate it). Carbon is the
+# actual Singapore tax: S$45/tCO2e for 2026-2027 (was S$25 in 2024-25). All assumptions.
+HEAT_RATE_CCGT_SG = float(os.getenv("HEAT_RATE_CCGT_SG", "7.0"))          # MMBtu/MWh, modern CCGT
+ASSUMED_SG_GAS_SGD_PER_MMBTU = float(os.getenv("ASSUMED_SG_GAS", "16.0")) # ~US$12/MMBtu LNG (assumption)
+ASSUMED_SG_CARBON_SGD_PER_TONNE = float(os.getenv("ASSUMED_SG_CARBON", "45.0"))  # SG carbon tax, 2026
+
+# ---------------------------------------------------------------------------
 # Anomaly detection
 # ---------------------------------------------------------------------------
 ANOMALY_WINDOW = 90            # rolling trading-day window
@@ -160,6 +182,7 @@ FRED_SERIES = {
     "fx.usd_jpy":   {"id": "DEXJPUS",  "unit": "JPY/USD", "group": "fx"},  # JPY per USD
     "fx.gbp_usd":   {"id": "DEXUSUK",  "unit": "USD/GBP", "group": "fx"},  # USD per GBP
     "fx.usd_cny":   {"id": "DEXCHUS",  "unit": "CNY/USD", "group": "fx"},
+    "fx.usd_sgd":   {"id": "DEXSIUS",  "unit": "SGD/USD", "group": "fx"},  # SGD per USD (for SG spark spread)
     # Credit risk (option-adjusted spreads, %)  — the market's risk-appetite gauge
     "credit.hy_oas": {"id": "BAMLH0A0HYM2", "unit": "%", "group": "credit"},  # US high yield
     "credit.ig_oas": {"id": "BAMLC0A0CM",   "unit": "%", "group": "credit"},  # US investment grade

@@ -61,6 +61,23 @@ def http_get_json(url: str, params: dict | None = None) -> dict:
     raise RuntimeError(f"GET failed after {config.HTTP_RETRIES} tries: {url} :: {last_exc}")
 
 
+def http_get_text(url: str, params: dict | None = None) -> str:
+    """GET returning raw text (e.g. XML), with bounded retries and backoff."""
+    last_exc: Exception | None = None
+    backoff = config.HTTP_BACKOFF
+    for attempt in range(1, config.HTTP_RETRIES + 1):
+        try:
+            r = requests.get(url, params=params, timeout=config.HTTP_TIMEOUT)
+            r.raise_for_status()
+            return r.text
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            if attempt < config.HTTP_RETRIES:
+                time.sleep(backoff)
+                backoff *= config.HTTP_BACKOFF
+    raise RuntimeError(f"GET failed after {config.HTTP_RETRIES} tries: {url} :: {last_exc}")
+
+
 def _cache_path(name: str):
     config.CACHE_DIR.mkdir(parents=True, exist_ok=True)
     return config.CACHE_DIR / f"{name}.csv"

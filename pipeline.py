@@ -22,7 +22,7 @@ from ingest.entsoe import fetch_entsoe
 from ingest.singapore import fetch_singapore
 from analytics import signals
 from analytics import macro
-from analytics.spreads import generation_cost, fuel_switching_price
+from analytics.spreads import generation_cost, fuel_switching_price, clean_spark_spread
 from store import load_store, upsert, save_store, history, latest_value
 from briefing.render import render_markdown
 
@@ -32,7 +32,7 @@ _REGISTRY = [
     (fetch_fred, True),
     (fetch_eia, config.ENABLE_EIA),
     (fetch_open_meteo, config.ENABLE_OPEN_METEO),
-    (fetch_entsoe, config.ENABLE_ENTSOE),
+    (fetch_entsoe, config.ENABLE_ENTSOE and bool(config.ENTSOE_TOKEN)),
     (fetch_singapore, config.ENABLE_SINGAPORE),
 ]
 SOURCES = [fn for fn, enabled in _REGISTRY if enabled]
@@ -98,6 +98,31 @@ def _derive(store):
                                        config.LCOE_CAPEX_PER_KW, config.LCOE_CAPACITY_FACTOR,
                                        config.LCOE_LIFE_YEARS, config.LCOE_FIXED_OM_PER_KW_YR),
             "USD/MWh", _latest_date(store, "rate.real_10y"))
+
+    # --- Power: live clean spark spreads (power is LIVE; gas/carbon are clearly
+    # labelled assumptions — no free daily feed exists for them). Each market is kept
+    # in its NATIVE currency so there's no FX noise and nothing is over-claimed. ---
+    from analytics.spreads import clean_spark_spread
+
+    # Germany — European convention: gas in EUR/MWh-thermal, heat rate = 1/efficiency.
+    de_power = latest_value(store, "power.de_lu")
+    if de_power is not None:
+        add("derived.de_spark",
+            clean_spark_spread(de_power, config.ASSUMED_TTF_EUR_PER_MWH,
+                               1.0 / config.SPARK_EFFICIENCY_EU,
+                               config.ASSUMED_EUA_EUR_PER_TONNE, config.EF_GAS_TONNE_PER_MWH),
+            "EUR/MWh", _latest_date(store, "power.de_lu"))
+
+    # Singapore — native SGD. SG generates from oil-linked LNG, so Henry Hub would
+    # badly understate fuel cost; an assumed SG gas price is used, plus the actual
+    # Singapore carbon tax. Both clearly flagged as assumptions on the dashboard.
+    sg_power = latest_value(store, "power.sg_usep")
+    if sg_power is not None:
+        add("derived.sg_spark",
+            clean_spark_spread(sg_power, config.ASSUMED_SG_GAS_SGD_PER_MMBTU,
+                               config.HEAT_RATE_CCGT_SG,
+                               config.ASSUMED_SG_CARBON_SGD_PER_TONNE, config.EF_GAS_TONNE_PER_MWH),
+            "SGD/MWh", _latest_date(store, "power.sg_usep"))
 
     if not derived:
         return store

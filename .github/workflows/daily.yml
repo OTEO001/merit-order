@@ -51,6 +51,8 @@ jobs:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+          ENTSOE_ZONE: ${{ vars.ENTSOE_ZONE }}
+          ENTSOE_ZONE_NAME: ${{ vars.ENTSOE_ZONE_NAME }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Daily email digest (optional; sends only if these are set).
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -60,7 +62,7 @@ jobs:
           # Feature toggles (override config defaults without touching code).
           ENABLE_EIA: ${{ vars.ENABLE_EIA || 'false' }}
           ENABLE_ENTSOE: ${{ vars.ENABLE_ENTSOE || 'false' }}
-          ENABLE_SINGAPORE: ${{ vars.ENABLE_SINGAPORE || 'false' }}
+          ENABLE_SINGAPORE: ${{ vars.ENABLE_SINGAPORE || 'true' }}
           ENABLE_LLM_POLISH: ${{ vars.ENABLE_LLM_POLISH || 'false' }}
           ASSUMED_CARBON: ${{ vars.ASSUMED_CARBON || '0.0' }}
           ASSUMED_COAL: ${{ vars.ASSUMED_COAL || '3.0' }}

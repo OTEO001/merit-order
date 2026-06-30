@@ -165,6 +165,11 @@ def build(store, briefing_md: str) -> None:
             _row(store, "CCGT b/e", "derived.ccgt_breakeven", "$/MWh", 1),
             _row(store, "Switch carbon", "derived.fuel_switch_carbon", "$/t", 1),
         ]},
+        {"title": "Power & spark spreads", "rows": [
+            _row(store, "SG USEP", "power.sg_usep", "S$/MWh", 2, pct=True),
+            _row(store, "SG clean spark", "derived.sg_spark", "S$/MWh", 1),
+            _row(store, "SG demand", "power.sg_demand", "MW", 0, pct=True),
+        ]},
     ]
 
     charts = [
