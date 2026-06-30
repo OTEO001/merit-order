@@ -1,6 +1,6 @@
 # Merit Order — Morning Briefing
 
-*As of 2026-06-30 21:23 +08*
+*As of 2026-06-30 21:31 +08*
 
 ## Today in one line
 Notable: 1 series moved beyond their 90-day range — see Flags below. Macro backdrop reads **neutral / mixed**: US 10y **4.28%**, 2s10s **47 bp**, VIX **15.59**. Gas at 3.51 $/MMBtu implies a CCGT breakeven power price near **24.57 $/MWh**.
