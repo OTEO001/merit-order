@@ -22,6 +22,7 @@ FRESHNESS_JSON = DATA_DIR / "_freshness.json"  # per-source data-quality report
 DOCS_DIR = ROOT / "docs"                        # GitHub Pages output
 BRIEFING_MD = DOCS_DIR / "briefing.md"
 CALENDAR_JSON = DATA_DIR / "_calendar.json"     # upcoming macro data releases
+HEADLINES_JSON = DATA_DIR / "_headlines.json"   # latest energy headlines
 
 # ---------------------------------------------------------------------------
 # Feature toggles  (env-overridable so CI can flip them without code edits)
@@ -211,6 +212,21 @@ FRED_CALENDAR_KEYWORDS = [
 ]
 CALENDAR_LOOKAHEAD_DAYS = 14
 CALENDAR_MAX_EVENTS = 8
+
+# ---------------------------------------------------------------------------
+# Energy headlines. Deliberately sourced from official/institutional RSS feeds
+# only (never scraped news sites) — this keeps the module on solid legal ground
+# (public-domain or explicitly redistributable) and avoids fragile unofficial
+# mirrors. Headline + link + source only, no article text — the same standard
+# practice as any RSS reader or news aggregator.
+# ---------------------------------------------------------------------------
+ENABLE_HEADLINES = _env_bool("ENABLE_HEADLINES", True)
+HEADLINES_MAX = 6
+HEADLINES_FEEDS = [
+    # EIA "Today in Energy" — official US government analysis, explicitly public
+    # domain and free to redistribute with attribution (eia.gov/todayinenergy/about.php).
+    {"name": "EIA — Today in Energy", "url": "https://www.eia.gov/rss/todayinenergy.xml"},
+]
 
 # ---------------------------------------------------------------------------
 # Cross-asset / risk-regime parameters.

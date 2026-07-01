@@ -63,6 +63,7 @@ jobs:
           ENABLE_EIA: ${{ vars.ENABLE_EIA || 'false' }}
           ENABLE_ENTSOE: ${{ vars.ENABLE_ENTSOE || 'false' }}
           ENABLE_SINGAPORE: ${{ vars.ENABLE_SINGAPORE || 'true' }}
+          ENABLE_HEADLINES: ${{ vars.ENABLE_HEADLINES || 'true' }}
           ENABLE_LLM_POLISH: ${{ vars.ENABLE_LLM_POLISH || 'false' }}
           ASSUMED_CARBON: ${{ vars.ASSUMED_CARBON || '0.0' }}
           ASSUMED_COAL: ${{ vars.ASSUMED_COAL || '3.0' }}
@@ -72,7 +73,7 @@ jobs:
         run: |
           git config user.name  "merit-order-bot"
           git config user.email "actions@users.noreplace.github.com"
-          git add data/series.csv data/_freshness.json docs/
+          git add data/series.csv data/_freshness.json data/_calendar.json data/_headlines.json docs/
           # Nothing to commit on a no-change day is success, not failure.
           if git diff --staged --quiet; then
             echo "No data changes today."

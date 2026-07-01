@@ -17,6 +17,7 @@ import sys
 import config
 from ingest.eia import fetch_eia
 from ingest.fred import fetch_fred, fetch_calendar
+from ingest.headlines import fetch_headlines
 from ingest.open_meteo import fetch_open_meteo
 from ingest.entsoe import fetch_entsoe
 from ingest.singapore import fetch_singapore
@@ -99,6 +100,15 @@ def _derive(store):
                                        config.LCOE_LIFE_YEARS, config.LCOE_FIXED_OM_PER_KW_YR),
             "USD/MWh", _latest_date(store, "rate.real_10y"))
 
+    # --- Relative-value spreads a cross-asset desk actually watches ---
+    brent, wti = latest_value(store, "oil.brent"), latest_value(store, "oil.wti")
+    if brent is not None and wti is not None:
+        add("derived.brent_wti_spread", brent - wti, "USD/bbl", _latest_date(store, "oil.brent"))
+
+    hy, ig = latest_value(store, "credit.hy_oas"), latest_value(store, "credit.ig_oas")
+    if hy is not None and ig is not None:
+        add("derived.hy_ig_spread", (hy - ig) * 100.0, "bp", _latest_date(store, "credit.hy_oas"))
+
     # --- Power: live clean spark spreads (power is LIVE; gas/carbon are clearly
     # labelled assumptions — no free daily feed exists for them). Each market is kept
     # in its NATIVE currency so there's no FX noise and nothing is over-claimed. ---
@@ -144,6 +154,7 @@ def run(build_site: bool = True) -> None:
     save_store(store)
 
     fetch_calendar()   # writes data/_calendar.json (best-effort; [] on failure)
+    fetch_headlines()  # writes data/_headlines.json (best-effort; [] on failure)
 
     briefing_md, _ = render_markdown(store)
     config.DOCS_DIR.mkdir(parents=True, exist_ok=True)

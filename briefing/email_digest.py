@@ -9,6 +9,7 @@ continues normally.
 """
 from __future__ import annotations
 
+import json
 import math
 import re
 import smtplib
@@ -19,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 import config
 from briefing.explain import build_explainers
+from briefing.render import _calendar_facts
 from store import history, latest_value
 
 # palette (kept readable on the light email canvas most clients prefer)
@@ -57,7 +59,38 @@ def build_email(store) -> tuple[str, str]:
     ex = build_explainers(store)
     tz = ZoneInfo(config.MARKET_TZ)
     today = datetime.now(tz).strftime("%A, %d %B %Y")
-    subject = f"Merit Order — {_strip(ex['headline']).rstrip('.')}"
+    plain_headline = _strip(ex["headline"])
+    lead_sentence = plain_headline.split(". ")[0].rstrip(".")
+    subject = f"Merit Order [{ex['mood']['tag']}] — {lead_sentence}"
+
+    # mood badge — same regime call as the dashboard, rendered as a light-theme pill
+    mood = ex["mood"]
+    mood_bg = {"up": "#EAF7F2", "down": "#FBEAEA", "flat": "#EAF6F4"}.get(mood["icon"], "#EAF6F4")
+    mood_fg = {"up": POS, "down": NEG, "flat": ACCENT}.get(mood["icon"], ACCENT)
+    mood_html = (
+        f'<div style="margin-top:14px;">'
+        f'<span style="display:inline-block;font:700 11px/1 Arial,sans-serif;letter-spacing:1px;'
+        f'text-transform:uppercase;color:{mood_fg};background:{mood_bg};border:1px solid {mood_fg};'
+        f'border-radius:6px;padding:7px 13px;">{mood["tag"]}</span>'
+        f'<span style="font:13px/1.5 Arial,sans-serif;color:{SUB};margin-left:10px;">{mood["sub"]}</span>'
+        f'</div>'
+    )
+
+    # notable today — the same "worth a look" extremes as the dashboard, email-safe markup
+    notable = ex.get("notable") or []
+    notable_html = ""
+    if notable:
+        items = "".join(
+            f'<div style="display:flex;gap:12px;padding:10px 0;{"border-top:1px solid " + LINE + ";" if i else ""}">'
+            f'<span style="font:700 11px/1.6 Arial,sans-serif;color:{ACCENT};flex-shrink:0;">{i + 1:02d}</span>'
+            f'<span style="font:14px/1.5 Georgia,serif;color:{INK};">{n}</span></div>'
+            for i, n in enumerate(notable)
+        )
+        notable_html = (
+            f'<div style="margin-top:22px;padding-top:16px;border-top:1px solid {LINE};">'
+            f'<div style="font:600 11px/1 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;'
+            f'color:{ACCENT};margin-bottom:2px;">Notable today</div>{items}</div>'
+        )
 
     # key metrics row
     metrics = [
@@ -109,6 +142,32 @@ def build_email(store) -> tuple[str, str]:
                f'padding:11px 20px;background:{INK};color:#fff;border-radius:8px;'
                f'font:600 13px Arial,sans-serif;text-decoration:none;">Open the full dashboard &rarr;</a>')
 
+    # Big events — a couple of upcoming releases + the freshest headlines, kept compact.
+    events_html = ""
+    try:
+        calendar = _calendar_facts()[:3]
+    except Exception:
+        calendar = []
+    try:
+        headlines = json.loads(config.HEADLINES_JSON.read_text())[:3]
+    except Exception:
+        headlines = []
+    if calendar or headlines:
+        cal_li = "".join(f'<div style="font:13px/1.7 Arial,sans-serif;color:{SUB};">'
+                         f'<b style="color:{INK};">{e["when"]}</b> — {e["name"]}</div>' for e in calendar)
+        hl_li = "".join(f'<div style="margin:6px 0;"><a href="{h["link"]}" '
+                        f'style="font:13px/1.5 Arial,sans-serif;color:{INK};text-decoration:none;">{h["title"]}</a>'
+                        f'<div style="font:11px Arial,sans-serif;color:{FAINT};margin-top:2px;">{h.get("source","")}</div></div>'
+                        for h in headlines)
+        events_html = (
+            f'<div style="margin:24px 0 0;padding-top:18px;border-top:1px solid {LINE};">'
+            + (f'<div style="font:600 11px/1 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;'
+               f'color:{ACCENT};margin-bottom:8px;">On the calendar</div>{cal_li}' if cal_li else '')
+            + (f'<div style="font:600 11px/1 Arial,sans-serif;letter-spacing:1.5px;text-transform:uppercase;'
+               f'color:{ACCENT};margin:16px 0 4px;">Energy headlines</div>{hl_li}' if hl_li else '')
+            + '</div>'
+        )
+
     html = f"""\
 <!doctype html><html><body style="margin:0;background:{CANVAS};padding:24px 0;">
 <table role="presentation" cellpadding="0" cellspacing="0" align="center"
@@ -116,10 +175,14 @@ def build_email(store) -> tuple[str, str]:
   <tr><td style="padding:26px 30px 0;">
     <div style="font:600 12px/1 Arial,sans-serif;letter-spacing:3px;text-transform:uppercase;color:{ACCENT};">◆ Merit Order</div>
     <div style="font:13px/1 Arial,sans-serif;color:{FAINT};margin-top:8px;">{today} · Morning briefing</div>
+    {mood_html}
     <h1 style="font:500 26px/1.25 Georgia,serif;color:{INK};margin:16px 0 4px;">{ex['headline']}</h1>
+    {f'<div style="font:600 12px/1.6 Arial,sans-serif;color:{ACCENT};margin:10px 0 2px;">SINCE YESTERDAY</div><div style="font:13px/1.6 Arial,sans-serif;color:{INK};">{ex["changed"]}</div>' if ex.get("changed") else ''}
+    {notable_html}
   </td></tr>
   <tr><td style="padding:14px 30px 0;">{metrics_table}</td></tr>
   <tr><td style="padding:6px 30px 4px;">{blocks}</td></tr>
+  <tr><td style="padding:0 30px 4px;">{events_html}</td></tr>
   <tr><td style="padding:22px 30px 8px;">{cta}</td></tr>
   <tr><td style="padding:14px 30px 26px;border-top:1px solid {LINE};">
     <div style="font:11px/1.6 Arial,sans-serif;color:{FAINT};">

@@ -10,11 +10,24 @@ a little more each day.
 """
 from __future__ import annotations
 
+import hashlib
 import math
 
 import config
 from analytics import macro, signals
 from store import history, latest_value
+
+
+def _day_seed(store, salt: str = "") -> int:
+    """Deterministic per-day int so copy varies day-to-day but is stable within a
+    day (no flicker on rebuild) and reproducible in tests."""
+    h = history(store, "rate.ust_10y")
+    key = (str(h.iloc[-1]["date"]) if not h.empty else "seed") + salt
+    return int(hashlib.md5(key.encode()).hexdigest(), 16)
+
+
+def _pick(pool: list[str], seed: int) -> str:
+    return pool[seed % len(pool)] if pool else ""
 
 
 def _v(store, s):
@@ -38,6 +51,74 @@ def _num(v, nd=2, dash="—"):
     if v is None or (isinstance(v, float) and math.isnan(v)):
         return dash
     return f"{v:,.{nd}f}"
+
+
+def _mood(regime: str, score: float) -> dict:
+    """Trading-desk-flavored framing of the risk regime — same underlying rules-based
+    score, sharper language. tag is the short badge; sub is the one-line why."""
+    if regime == "risk-off":
+        tag = "Risk-Off" if score < 2.5 else "Risk-Off, Loudly"
+        sub = "credit's leaking, vol's bid, the dollar's catching a haven flow."
+        icon = "down"
+    elif regime == "risk-on":
+        tag = "Risk-On" if score > -2.5 else "Risk-On, No Brakes"
+        sub = "spreads are tight, vol's cheap, nobody's paying for protection."
+        icon = "up"
+    elif regime == "unknown":
+        tag, sub, icon = "No Read", "not enough live data to call it today.", "flat"
+    else:
+        tag = "Chop"
+        sub = "the inputs are fighting each other — no real edge either way."
+        icon = "flat"
+    return {"tag": tag, "sub": sub, "icon": icon}
+
+
+NOTABLE_SERIES = [
+    ("The 10-year yield", "rate.ust_10y", "%", 2),
+    ("The VIX", "vol.vix", "", 2),
+    ("Brent", "oil.brent", "$/bbl", 2),
+    ("Henry Hub gas", "gas.henry_hub", "$/MMBtu", 2),
+    ("The Brent−WTI spread", "derived.brent_wti_spread", "$/bbl", 2),
+    ("The HY−IG spread", "derived.hy_ig_spread", "bp", 0),
+    ("Singapore's USEP", "power.sg_usep", "S$/MWh", 2),
+    ("Singapore's clean spark", "derived.sg_spark", "S$/MWh", 1),
+    ("The broad dollar", "fx.usd_broad", "", 2),
+]
+
+
+def _extreme(store, series: str, window: int = 60, min_sessions: int = 10):
+    """Where today's print ranks within its trailing window. None if too little
+    history to say anything meaningful yet."""
+    h = history(store, series).tail(window)
+    vals = [float(v) for v in h["value"] if v is not None and not (isinstance(v, float) and math.isnan(v))]
+    if len(vals) < min_sessions:
+        return None
+    lo, hi, cur, n = min(vals), max(vals), vals[-1], len(vals)
+    if hi == lo:
+        return None
+    pct = (cur - lo) / (hi - lo) * 100.0
+    return {"pct": pct, "n": n, "cur": cur, "is_max": cur >= hi - 1e-9, "is_min": cur <= lo + 1e-9}
+
+
+def notable_moves(store, window: int = 60, max_items: int = 3) -> list[str]:
+    """'Worth a look today' — series sitting at a genuine multi-session extreme, the
+    kind of fact a desk would actually mention out loud. Ranked by how extreme, not
+    by which series happens to lead a static list."""
+    candidates = []
+    for label, series, unit, nd in NOTABLE_SERIES:
+        ext = _extreme(store, series, window)
+        if ext is None:
+            continue
+        extremity = abs(ext["pct"] - 50.0)
+        if extremity < 38:   # roughly: needs to be in the top/bottom ~12% of the window
+            continue
+        superlative = "high" if ext["is_max"] else ("low" if ext["is_min"] else
+                      ("highest read" if ext["pct"] >= 50 else "lowest read"))
+        val = f"{ext['cur']:,.{nd}f}{(' ' + unit) if unit else ''}"
+        sentence = f"{label} just printed its {ext['n']}-session {superlative} — {val}."
+        candidates.append((extremity, sentence))
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return [s for _, s in candidates[:max_items]]
 
 
 # --------------------------------------------------------------------------- #
@@ -118,6 +199,7 @@ def _risk(store):
     curve_chg = ((d10 - d2) * 100.0) if (d2 is not None and d10 is not None) else math.nan
     regime, score = macro.risk_regime(vix if vix is not None else math.nan, hy_z,
                                       _delta(store, "fx.usd_broad") or math.nan, curve_chg)
+    mood = _mood(regime, 0.0 if (score is None or math.isnan(score)) else score)
 
     if vix is None:
         vix_txt = "Volatility data is unavailable today."
@@ -128,14 +210,17 @@ def _risk(store):
     else:
         vix_txt = f"The VIX is {_num(vix)} — a <b>middling</b> level, neither calm nor stressed."
 
+    ig = _v(store, "credit.ig_oas")
+    hy_ig = _num(_v(store, "derived.hy_ig_spread"), 0)
     return {
         "key": "risk", "title": "Credit, volatility & risk appetite",
         "plain": ("Credit spreads (the extra yield investors demand to lend to companies rather "
                   "than the government) and the VIX (the market's expectation of stock-market "
                   "swings) together measure the market's appetite for risk."),
-        "today": (f"The cross-asset regime reads <b>{regime}</b>. {vix_txt} "
-                  f"High-yield credit spreads sit at {_num(hy)}% and investment-grade at "
-                  f"{_num(_v(store, 'credit.ig_oas'))}%."),
+        "today": (f"The cross-asset regime reads <b>{mood['tag']}</b> ({regime}). {vix_txt} "
+                  f"High-yield credit spreads sit at {_num(hy)}% and investment-grade at {_num(ig)}% "
+                  f"— a <b>{hy_ig}bp</b> differential, the market's price for lending to riskier "
+                  f"borrowers over safer ones."),
         "matters": ("Risk-off conditions — widening credit spreads and a rising VIX — tend to drag "
                     "commodity-linked and energy equities down alongside everything else, regardless "
                     "of energy's own supply-and-demand picture. It's the macro tide under the boats."),
@@ -148,6 +233,7 @@ def _energy(store):
     ccgt = _v(store, "derived.ccgt_breakeven")
     switch = _v(store, "derived.fuel_switch_carbon")
     gchg, bchg = _delta(store, "gas.henry_hub"), _delta(store, "oil.brent")
+    bw = _num(_v(store, "derived.brent_wti_spread"), 2)
 
     return {
         "key": "energy", "title": "Energy & generation economics",
@@ -156,12 +242,16 @@ def _energy(store):
                   "just covers its fuel cost — its place in the 'merit order', the cheapest-first "
                   "stack that sets the electricity price."),
         "today": (f"Henry Hub gas is {_num(gas)} $/MMBtu and {_word(gchg)}; Brent is {_num(brent)} "
-                  f"$/bbl and {_word(bchg)}; WTI {_num(_v(store, 'oil.wti'))} $/bbl. At a standard "
-                  f"heat rate, gas implies a power breakeven near <b>{_num(ccgt, 1)} $/MWh</b>."),
+                  f"$/bbl and {_word(bchg)}; WTI {_num(_v(store, 'oil.wti'))} $/bbl — a Brent−WTI "
+                  f"spread of <b>${bw}/bbl</b>. At a standard heat rate, gas implies a power "
+                  f"breakeven near <b>{_num(ccgt, 1)} $/MWh</b>."),
         "matters": (f"When gas is cheap, gas plants sit low in the merit order and pull power prices "
                     f"down; when it's dear, coal and gas swap places. The fuel-switching carbon price "
                     f"({_num(switch, 1)} $/t) is the carbon price at which gas would overtake coal in "
-                    f"the stack — the number that links climate policy to the day-ahead power market."),
+                    f"the stack — the number that links climate policy to the day-ahead power market. "
+                    f"The Brent−WTI spread, meanwhile, reflects transport and quality differences "
+                    f"between the two crude benchmarks — it widens when US supply outpaces pipeline "
+                    f"and export capacity to the coast."),
     }
 
 
@@ -222,6 +312,91 @@ def _power(store):
     }
 
 
+def _top_mover(store):
+    """The single biggest day-over-day move worth naming, or None on a dead-quiet day."""
+    defs = [("Brent", "oil.brent", "pct"), ("Henry Hub gas", "gas.henry_hub", "pct"),
+            ("the 10Y", "rate.ust_10y", "bp"), ("the dollar", "fx.usd_broad", "pct"),
+            ("the VIX", "vol.vix", "pct"), ("USEP", "power.sg_usep", "pct")]
+    best = None
+    for label, s, kind in defs:
+        _, chg, pct = _move(store, s)
+        if chg is None or pct is None:
+            continue
+        if kind == "bp":
+            mag = abs(chg * 100)
+            if mag < 1:
+                continue
+            txt = f"{label} {'+' if chg >= 0 else '−'}{mag:.0f}bp"
+        else:
+            mag = abs(pct)
+            if mag < 0.3:
+                continue
+            arrow = "▲" if pct >= 0 else "▼"
+            txt = f"{label} {arrow} {mag:.1f}%"
+        # normalize bp and pct onto a roughly comparable "how big a deal" scale
+        score = mag if kind == "pct" else mag / 4.0
+        if best is None or score > best[0]:
+            best = (score, txt)
+    return best[1] if best else None
+
+
+def _move(store, s):
+    """Return (last_value, abs_change, pct_change) day-over-day, or (last, None, None)."""
+    h = history(store, s)
+    if h.empty:
+        return None, None, None
+    if len(h) < 2:
+        return float(h.iloc[-1]["value"]), None, None
+    a, b = float(h.iloc[-2]["value"]), float(h.iloc[-1]["value"])
+    pct = ((b - a) / a * 100.0) if a else None
+    return b, b - a, pct
+
+
+def whats_changed(store) -> dict:
+    """A plain-English 'what moved since the prior session' line for the hero + email.
+
+    Singapore USEP is live daily, so it's always reported; macro series (rates, FX,
+    oil, gas) publish with a lag and are flat on weekends, so they're only called out
+    when they actually moved — otherwise we say so, which is itself reassuring.
+    """
+    bits = []
+
+    # USEP — the live daily tell, always shown if present.
+    usep, _, upct = _move(store, "power.sg_usep")
+    if usep is not None and upct is not None:
+        arrow = "▲" if upct >= 0 else "▼"
+        bits.append(f"USEP {arrow} {abs(upct):.1f}% to S${usep:,.0f}/MWh")
+    elif usep is not None:
+        bits.append(f"USEP at S${usep:,.0f}/MWh")
+
+    # Macro movers — only if they meaningfully moved (>=0.3%), biggest first.
+    macro_defs = [("Brent", "oil.brent", "pct"), ("gas", "gas.henry_hub", "pct"),
+                  ("the 10Y", "rate.ust_10y", "bp"), ("the dollar", "fx.usd_broad", "pct"),
+                  ("the VIX", "vol.vix", "pct")]
+    movers = []
+    for label, s, kind in macro_defs:
+        last, chg, pct = _move(store, s)
+        if pct is None or chg is None:
+            continue
+        if kind == "bp":
+            if abs(chg * 100) >= 1:
+                movers.append((abs(chg * 100), f"{label} {'+' if chg >= 0 else '−'}{abs(chg * 100):.0f}bp"))
+        else:
+            if abs(pct) >= 0.3:
+                arrow = "▲" if pct >= 0 else "▼"
+                movers.append((abs(pct), f"{label} {arrow} {abs(pct):.1f}%"))
+    movers.sort(reverse=True)
+    bits.extend(m[1] for m in movers[:3])
+
+    if len(bits) <= 1:  # only USEP (or nothing) moved
+        quiet_pool = ["macro markets little changed since the prior session",
+                      "a flat session across the board — nothing chasing here",
+                      "rates, FX and energy all sat on their hands overnight"]
+        bits.append(_pick(quiet_pool, _day_seed(store, "changed")))
+
+    return {"line": "  ·  ".join(bits)}
+
+
 GLOSSARY = [
     ("2s10s", "The 10-year Treasury yield minus the 2-year. Positive = normal upward-sloping curve; "
               "negative = 'inverted', a classic recession signal."),
@@ -243,6 +418,14 @@ GLOSSARY = [
              "Singapore's gas-dominated grid, the price energy withdrawals settle at."),
     ("Day-ahead price", "The wholesale power price set in an auction the day before delivery, hour by "
                         "hour. ENTSO-E publishes it for each European bidding zone."),
+    ("Brent−WTI spread", "The price gap between the two main crude benchmarks, driven by transport "
+                         "costs, quality, and pipeline/export capacity — a classic relative-value trade."),
+    ("HY−IG spread", "The gap between high-yield and investment-grade credit spreads — how much extra "
+                     "the market demands for the riskiest borrowers specifically, isolated from the "
+                     "general level of rates."),
+    ("Yield curve inversion", "When a shorter-maturity bond yields more than a longer one (e.g. 2Y "
+                              "above 10Y). Unusual, and historically one of the more reliable signals "
+                              "that a recession may lie ahead."),
     ("LCOE", "Levelised cost of energy: the all-in lifetime cost of a power project per MWh, dominated "
              "by upfront capital and therefore very sensitive to interest rates."),
     ("HDD / CDD", "Heating- and cooling-degree-days: how far temperature sits below/above a comfort "
@@ -251,28 +434,63 @@ GLOSSARY = [
 
 
 def _headline(store):
-    """One-line synthesis for the top of the page and the email subject."""
+    """One-line lead for the top of the page and the email subject. Leads with
+    whichever is most interesting today — a genuine multi-session extreme, a big
+    move, or (on a quiet day) says so — rather than reciting the same three numbers
+    every morning. Phrasing rotates on a per-day seed so it stays fresh."""
     vix = _v(store, "vol.vix")
     y2, y10 = _v(store, "rate.ust_2y"), _v(store, "rate.ust_10y")
     slope = macro.curve_slope_bps(y2, y10) if (y2 is not None and y10 is not None) else math.nan
     hy_z = signals.rolling_zscore(history(store, "credit.hy_oas")["value"])
     d2, d10 = _delta(store, "rate.ust_2y"), _delta(store, "rate.ust_10y")
     curve_chg = ((d10 - d2) * 100.0) if (d2 is not None and d10 is not None) else math.nan
-    regime, _ = macro.risk_regime(vix if vix is not None else math.nan, hy_z,
-                                  _delta(store, "fx.usd_broad") or math.nan, curve_chg)
+    regime, score = macro.risk_regime(vix if vix is not None else math.nan, hy_z,
+                                      _delta(store, "fx.usd_broad") or math.nan, curve_chg)
+    mood = _mood(regime, 0.0 if (score is None or math.isnan(score)) else score)
     inv = (not math.isnan(slope)) and slope < 0
-    bits = [f"Markets read <b>{regime}</b>"]
-    if y10 is not None:
-        bits.append(f"the 10-year at {_num(y10)}%{' with an inverted curve' if inv else ''}")
-    brent = _v(store, "oil.brent")
-    if brent is not None:
-        bits.append(f"Brent near ${_num(brent, 0)}")
-    return ", ".join(bits) + "."
+    seed = _day_seed(store, "headline")
+
+    extremes = notable_moves(store, max_items=1)
+    mover = _top_mover(store)
+    inv_clause = " — and the curve's inverted" if inv else ""
+
+    if extremes:
+        pool = [
+            f"{extremes[0]} That's the story today; the book reads <b>{mood['tag']}</b>.",
+            f"Mark this one — {extremes[0]} Regime stays <b>{mood['tag']}</b>{inv_clause}.",
+            f"{extremes[0]} Everything else is secondary today.",
+        ]
+        return _pick(pool, seed)
+
+    if mover:
+        pool = [
+            f"{mover} is doing the talking — book reads <b>{mood['tag']}</b>{inv_clause}.",
+            f"The story today is {mover}. Regime: <b>{mood['tag']}</b>.",
+            f"{mover}, and not much else moved. Call it <b>{mood['tag']}</b>{inv_clause}.",
+        ]
+        return _pick(pool, seed)
+
+    quiet = [
+        f"Quiet tape — nothing loud enough to trade on, book stays <b>{mood['tag']}</b>{inv_clause}.",
+        f"Not much doing today. Regime reads <b>{mood['tag']}</b>{inv_clause}.",
+        f"A grinder of a session, no real prints worth chasing. <b>{mood['tag']}</b> underneath it all.",
+    ]
+    return _pick(quiet, seed)
 
 
 def build_explainers(store) -> dict:
+    vix = _v(store, "vol.vix")
+    hy_z = signals.rolling_zscore(history(store, "credit.hy_oas")["value"])
+    d2, d10 = _delta(store, "rate.ust_2y"), _delta(store, "rate.ust_10y")
+    curve_chg = ((d10 - d2) * 100.0) if (d2 is not None and d10 is not None) else math.nan
+    regime, score = macro.risk_regime(vix if vix is not None else math.nan, hy_z,
+                                      _delta(store, "fx.usd_broad") or math.nan, curve_chg)
+    mood = _mood(regime, 0.0 if (score is None or math.isnan(score)) else score)
     return {
         "headline": _headline(store),
+        "changed": whats_changed(store)["line"],
+        "mood": mood,
+        "notable": notable_moves(store),
         "sections": [_rates(store), _dollar(store), _risk(store), _energy(store), _power(store), _bridge(store)],
         "glossary": [{"term": t, "def": d} for t, d in GLOSSARY],
     }

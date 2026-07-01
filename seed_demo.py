@@ -90,8 +90,10 @@ def main() -> None:
     add("fx.usd_jpy",   _ar1(n, 150.0, 150.0, 0.7, 140, 160), "JPY/USD")
     add("fx.gbp_usd",   _ar1(n, 1.27, 1.27, 0.004, 1.20, 1.34), "USD/GBP")
     add("fx.usd_cny",   _ar1(n, 7.20, 7.20, 0.02, 7.0, 7.4), "CNY/USD")
-    add("credit.hy_oas", _ar1(n, 3.20, 3.20, 0.06, 2.6, 5.0), "%")
-    add("credit.ig_oas", _ar1(n, 0.90, 0.90, 0.02, 0.7, 1.5), "%")
+    hy_oas = _ar1(n, 3.20, 3.20, 0.06, 2.6, 5.0)
+    ig_oas = _ar1(n, 0.90, 0.90, 0.02, 0.7, 1.5)
+    add("credit.hy_oas", hy_oas, "%")
+    add("credit.ig_oas", ig_oas, "%")
     add("vol.vix",   _ar1(n, 15.0, 15.0, 0.9, 11, 32), "index")
     add("eq.sp500",  _ar1(n, 5800, 5800, 35, 5200, 6200), "index")
     add("eq.nasdaq", _ar1(n, 18500, 18500, 120, 16500, 20000), "index")
@@ -137,6 +139,11 @@ def main() -> None:
                                    config.EF_GAS_TONNE_PER_MWH) for p in sg_usep]
     add("derived.de_spark", [round(v, 2) for v in de_spark], "EUR/MWh")
     add("derived.sg_spark", [round(v, 2) for v in sg_spark], "SGD/MWh")
+
+    bw_spread = [b - w for b, w in zip(brent, wti)]
+    hy_ig = [(h - i) * 100.0 for h, i in zip(hy_oas, ig_oas)]
+    add("derived.brent_wti_spread", [round(v, 2) for v in bw_spread], "USD/bbl")
+    add("derived.hy_ig_spread", [round(v, 1) for v in hy_ig], "bp")
 
     df = pd.DataFrame(rows)[COLUMNS]
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -44,3 +44,11 @@ def test_email_builds_subject_and_html():
     subject, html = build_email(_store(rows))
     assert subject.startswith("Merit Order")
     assert "<html" in html.lower() and "Why it matters" in html
+
+
+def test_changed_summary_present_and_safe():
+    ex = build_explainers(_store([]))
+    assert "changed" in ex and isinstance(ex["changed"], str)
+    rows = _series("power.sg_usep", [200, 210]) + _series("oil.brent", [77, 78])
+    ex2 = build_explainers(_store(rows))
+    assert "USEP" in ex2["changed"]

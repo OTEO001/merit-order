@@ -23,8 +23,9 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import config
 from store import history, latest_value
 from analytics.spreads import generation_cost, fuel_switching_price
-from analytics import macro
+from analytics import macro, signals
 from briefing.explain import build_explainers
+from briefing.render import _calendar_facts
 
 _env = Environment(
     loader=FileSystemLoader(str(config.ROOT / "dashboard" / "templates")),
@@ -107,7 +108,115 @@ def _hero_stat(store, label, series, unit, nd=2, bp=False, pct=True):
     raw = latest_value(store, series)
     r["raw"] = "" if raw is None or (isinstance(raw, float) and math.isnan(raw)) else float(raw)
     r["nd"] = nd
+    r["range"] = _range_bar(store, series, nd)
     return r
+
+
+def _yield_curve_chart(store):
+    """Today's Treasury curve vs ~1 month ago — the first chart any rates desk pulls up."""
+    tenors = [("3M", "rate.ust_3m", 0.25), ("2Y", "rate.ust_2y", 2), ("5Y", "rate.ust_5y", 5),
+              ("10Y", "rate.ust_10y", 10), ("30Y", "rate.ust_30y", 30)]
+    labels = [t[0] for t in tenors]
+    today, prior, prior_date = [], [], None
+    for _, series, _ in tenors:
+        h = history(store, series)
+        today.append(float(h.iloc[-1]["value"]) if not h.empty else None)
+        if len(h) > 21:
+            prior.append(float(h.iloc[-22]["value"]))
+            prior_date = str(h.iloc[-22]["date"])
+        elif not h.empty:
+            prior.append(float(h.iloc[0]["value"]))
+            prior_date = str(h.iloc[0]["date"])
+        else:
+            prior.append(None)
+
+    fig = go.Figure()
+    if any(v is not None for v in prior):
+        fig.add_trace(go.Scatter(x=labels, y=prior, mode="lines+markers", name="1 month ago",
+                                 line=dict(color=MUTED, width=1.6, dash="dot"),
+                                 marker=dict(size=5, color=MUTED),
+                                 hovertemplate="%{y:.2f}%<extra></extra>"))
+    if any(v is not None for v in today):
+        fig.add_trace(go.Scatter(x=labels, y=today, mode="lines+markers", name="Today",
+                                 line=dict(color=ACCENT, width=2.2),
+                                 marker=dict(size=7, color=ACCENT),
+                                 hovertemplate="%{y:.2f}%<extra></extra>"))
+    fig.update_layout(
+        margin=dict(l=40, r=16, t=8, b=28), height=260,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        showlegend=True, hovermode="x unified",
+        legend=dict(orientation="h", x=0, y=1.16, font=dict(size=10.5, color=MUTED),
+                   bgcolor="rgba(0,0,0,0)"),
+        font=dict(family="IBM Plex Mono, monospace", size=10.5, color=MUTED),
+        xaxis=dict(showgrid=False, tickfont=dict(size=11, color="#EAEEF5")),
+        yaxis=dict(showgrid=True, gridcolor=LINE, gridwidth=1, ticksuffix="%",
+                   tickfont=dict(size=10, color=MUTED), zeroline=False),
+    )
+    inv = None
+    y2, y10 = latest_value(store, "rate.ust_2y"), latest_value(store, "rate.ust_10y")
+    if y2 is not None and y10 is not None:
+        inv = y10 < y2
+    return {
+        "title": "US Treasury curve", "prior_date": prior_date, "inverted": inv,
+        "html": fig.to_html(full_html=False, include_plotlyjs=False,
+                            config={"displayModeBar": False, "responsive": True}),
+    }
+
+
+def _risk_gauge(store):
+    """Risk-on / risk-off regime as a gauge — the cross-asset temperature check."""
+    vix = latest_value(store, "vol.vix")
+    hy_z = signals.rolling_zscore(history(store, "credit.hy_oas")["value"]) if len(history(store, "credit.hy_oas")) else math.nan
+    dxy_chg = _delta(store, "fx.usd_broad")
+    d2, d10 = _delta(store, "rate.ust_2y"), _delta(store, "rate.ust_10y")
+    curve_chg = ((d10 - d2) * 100.0) if (d2 is not None and d10 is not None) else math.nan
+    label, score = macro.risk_regime(vix if vix is not None else math.nan, hy_z,
+                                     dxy_chg if dxy_chg is not None else math.nan, curve_chg)
+    val = 0.0 if (score is None or math.isnan(score)) else max(-3.0, min(3.0, score))
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number", value=val,
+        number=dict(font=dict(size=1, color="rgba(0,0,0,0)")),  # hide raw number; label shown in template
+        gauge=dict(
+            axis=dict(range=[-3, 3], tickvals=[-3, 0, 3], ticktext=["Risk-on", "Neutral", "Risk-off"],
+                      tickfont=dict(size=10, color=MUTED), tickcolor=LINE),
+            bar=dict(color=ACCENT, thickness=0.28),
+            bgcolor="rgba(0,0,0,0)", borderwidth=0,
+            steps=[
+                dict(range=[-3, -1.5], color="rgba(52,211,153,0.16)"),
+                dict(range=[-1.5, 1.5], color="rgba(92,102,117,0.14)"),
+                dict(range=[1.5, 3], color="rgba(248,113,113,0.16)"),
+            ],
+            threshold=dict(line=dict(color="#fff", width=2), thickness=0.75, value=val),
+        ),
+    ))
+    fig.update_layout(margin=dict(l=18, r=18, t=10, b=6), height=190,
+                      paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                      font=dict(family="IBM Plex Mono, monospace", color=MUTED))
+    return {
+        "label": label, "score": val,
+        "html": fig.to_html(full_html=False, include_plotlyjs=False,
+                            config={"displayModeBar": False, "responsive": True}),
+    }
+
+
+def _range_bar(store, series, nd=2, window=90):
+    """Where today's value sits within its trailing window — quick mean-reversion context."""
+    h = history(store, series).tail(window)
+    vals = [float(v) for v in h["value"] if v is not None and not (isinstance(v, float) and math.isnan(v))]
+    if len(vals) < 5:
+        return None
+    lo, hi, cur = min(vals), max(vals), vals[-1]
+    pct = 50.0 if hi == lo else max(0.0, min(100.0, (cur - lo) / (hi - lo) * 100.0))
+    return {"lo": _fmt(lo, nd), "hi": _fmt(hi, nd), "pct": round(pct, 1)}
+
+
+def _read_headlines():
+    try:
+        items = json.loads(config.HEADLINES_JSON.read_text())
+    except Exception:
+        return []
+    return items[: config.HEADLINES_MAX]
 
 
 def _chart(store, series, title, unit, color=ACCENT):
@@ -155,6 +264,7 @@ def build(store, briefing_md: str) -> None:
         {"title": "Credit & volatility", "rows": [
             _row(store, "HY OAS", "credit.hy_oas", "%", 2, bp=True),
             _row(store, "IG OAS", "credit.ig_oas", "%", 2, bp=True),
+            _row(store, "HY−IG spread", "derived.hy_ig_spread", "bp", 0),
             _row(store, "VIX", "vol.vix", "", 2, pct=True),
             _row(store, "S&P 500", "eq.sp500", "", 0, pct=True),
         ]},
@@ -162,6 +272,7 @@ def build(store, briefing_md: str) -> None:
             _row(store, "Henry Hub", "gas.henry_hub", "$/MMBtu", 2, pct=True),
             _row(store, "WTI", "oil.wti", "$/bbl", 2, pct=True),
             _row(store, "Brent", "oil.brent", "$/bbl", 2, pct=True),
+            _row(store, "Brent−WTI", "derived.brent_wti_spread", "$/bbl", 2),
             _row(store, "CCGT b/e", "derived.ccgt_breakeven", "$/MWh", 1),
             _row(store, "Switch carbon", "derived.fuel_switch_carbon", "$/t", 1),
         ]},
@@ -176,6 +287,9 @@ def build(store, briefing_md: str) -> None:
         _chart(store, "rate.ust_10y", "US 10Y yield", "%"),
         _chart(store, "derived.curve_2s10s", "2s10s slope", "bp"),
         _chart(store, "fx.usd_broad", "Broad dollar", "idx"),
+        _chart(store, "derived.brent_wti_spread", "Brent−WTI spread", "$/bbl"),
+        _chart(store, "derived.hy_ig_spread", "HY−IG credit spread", "bp"),
+        _chart(store, "derived.sg_spark", "Singapore clean spark", "S$/MWh"),
         _chart(store, "gas.henry_hub", "Henry Hub gas", "$/MMBtu"),
         _chart(store, "oil.brent", "Brent crude", "$/bbl"),
         _chart(store, "derived.solar_lcoe", "Solar LCOE vs real yields", "$/MWh"),
@@ -200,12 +314,19 @@ def build(store, briefing_md: str) -> None:
         _hero_stat(store, "VIX", "vol.vix", "", 2),
         _hero_stat(store, "Brent", "oil.brent", "$/bbl", 2),
     ]
+    yield_curve = _yield_curve_chart(store)
+    risk_gauge = _risk_gauge(store)
+    calendar = _calendar_facts()
+    headlines = _read_headlines()
     html = _env.get_template("index.html.j2").render(
         title=config.SITE_TITLE, tagline=config.SITE_TAGLINE,
         generated_at=datetime.now(tz).strftime("%Y-%m-%d %H:%M %Z"),
         data_date=data_date, groups=groups, charts=charts, freshness=freshness,
         headline=explainers["headline"], sections=explainers["sections"],
         glossary=explainers["glossary"], hero_stats=hero_stats,
+        changed=explainers["changed"], yield_curve=yield_curve, risk_gauge=risk_gauge,
+        calendar=calendar, headlines=headlines,
+        mood=explainers["mood"], notable=explainers["notable"],
         briefing_html=md_lib.markdown(briefing_md, extensions=["tables"]),
     )
     config.DOCS_DIR.mkdir(parents=True, exist_ok=True)

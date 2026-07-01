@@ -59,9 +59,43 @@
     border-radius:999px;color:var(--accent);letter-spacing:.12em}
   .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
   .headline{font-family:var(--serif);font-weight:500;font-size:clamp(28px,4.6vw,52px);line-height:1.08;
-    letter-spacing:-.015em;color:#fff;margin:0 0 8px;max-width:18ch}
+    letter-spacing:-.015em;color:#fff;margin:0 0 8px;max-width:22ch}
   .headline b{color:var(--accent);font-weight:600}
-  .hero .lede{color:var(--t2);font-size:15px;max-width:62ch;margin:0}
+  .mood-up .headline b{color:var(--pos)}
+  .mood-down .headline b{color:var(--neg)}
+  .changed{margin-top:16px;font-family:var(--mono);font-size:12.5px;color:var(--t1);
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;line-height:1.7}
+  .changed .chgk{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);
+    border:1px solid var(--line-2);border-radius:999px;padding:3px 9px}
+
+  /* mood badge — the regime call, rendered with actual color-coded weight */
+  .moodrow{display:flex;align-items:center;gap:14px;margin:2px 0 16px;flex-wrap:wrap}
+  .moodtag{font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.08em;
+    padding:7px 15px;border-radius:8px;text-transform:uppercase;white-space:nowrap}
+  .mood-flat .moodtag{background:rgba(79,209,197,.14);color:var(--accent);border:1px solid rgba(79,209,197,.4)}
+  .mood-up .moodtag{background:rgba(52,211,153,.14);color:var(--pos);border:1px solid rgba(52,211,153,.4)}
+  .mood-down .moodtag{background:rgba(248,113,113,.14);color:var(--neg);border:1px solid rgba(248,113,113,.4)}
+  .moodsub{font-size:13px;color:var(--t2);max-width:52ch}
+
+  /* ambient glow shifts with the regime call — subtle, not gaudy */
+  body:has(.mood-up)::before{background:
+      radial-gradient(1100px 620px at 78% -8%, rgba(52,211,153,.13), transparent 60%),
+      radial-gradient(900px 600px at 8% 4%, rgba(125,211,252,.06), transparent 55%),
+      linear-gradient(180deg, var(--bg-2), var(--bg) 38%)}
+  body:has(.mood-down)::before{background:
+      radial-gradient(1100px 620px at 78% -8%, rgba(248,113,113,.13), transparent 60%),
+      radial-gradient(900px 600px at 8% 4%, rgba(125,211,252,.06), transparent 55%),
+      linear-gradient(180deg, var(--bg-2), var(--bg) 38%)}
+
+  /* notable-today — the hook: bold, numbered, no chart required to land */
+  .notable{border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    background:var(--glass);backdrop-filter:blur(8px)}
+  .ntitem{display:flex;align-items:baseline;gap:18px;padding:17px 22px}
+  .ntitem+.ntitem{border-top:1px solid var(--line)}
+  .ntnum{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.08em;
+    flex-shrink:0;padding-top:3px}
+  .nttxt{font-family:var(--serif);font-size:17.5px;color:#fff;line-height:1.45;letter-spacing:-.005em}
+
 
   /* hero stat strip */
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
@@ -72,6 +106,28 @@
   .stat .n small{font-size:12px;color:var(--t3);margin-left:3px}
   .stat .d{font-family:var(--mono);font-size:11.5px;margin-top:7px;color:var(--t3)}
   .stat .d.pos{color:var(--pos)} .stat .d.neg{color:var(--neg)}
+  .rangebar{position:relative;height:3px;background:var(--line-2);border-radius:2px;margin-top:12px}
+  .rangebar i{position:absolute;top:-2.5px;width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px rgba(79,209,197,.8);transform:translateX(-50%);font-style:normal}
+  .rangelbl{display:flex;justify-content:space-between;margin-top:6px;font-family:var(--mono);
+    font-size:9.5px;color:var(--t3);letter-spacing:.02em}
+  .rangelbl span:nth-child(2){letter-spacing:.14em;text-transform:uppercase}
+
+  /* market structure: yield curve + risk gauge */
+  .structure{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+  .panel.curve h3,.panel.gauge h3{display:flex;align-items:center;gap:10px}
+  .invtag{font-size:9.5px;letter-spacing:.12em;color:var(--neg);border:1px solid rgba(248,113,113,.4);
+    border-radius:999px;padding:2px 8px;font-weight:600}
+  .gaugelbl{text-align:center;font-family:var(--serif);font-size:19px;color:#fff;margin-top:-6px}
+  .subnote{font-size:11px;color:var(--t3);margin-top:8px;line-height:1.5}
+  .headlines{display:flex;flex-direction:column;gap:2px}
+  .hl{display:block;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;
+    transition:opacity .15s}
+  .hl:first-child{border-top:none}
+  .hl:hover{opacity:.75}
+  .hlt{display:block;font-size:13.5px;color:var(--t1);line-height:1.45}
+  .hlm{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+    color:var(--t3);margin-top:4px}
 
   /* section eyebrow */
   .sec{font-family:var(--mono);font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;
@@ -150,7 +206,7 @@
     font-size:11px;line-height:1.7}
   :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
   @media (max-width:880px){
-    .grid,.charts,.stats,.ex .rowx{grid-template-columns:1fr}
+    .grid,.charts,.stats,.ex .rowx,.structure{grid-template-columns:1fr}
     .stats{border-radius:12px}
   }
   @media (prefers-reduced-motion:reduce){
@@ -170,14 +226,18 @@
     </div>
   </header>
 
-  <section class="hero rise">
+  <section class="hero rise mood-{{ mood.icon }}">
     <div class="eyebrow">
       <span class="pill"><span class="dot"></span>Daily briefing</span>
       {% if data_date %}<span>Market close {{ data_date }}</span>{% endif %}
       <span>{{ tagline }}</span>
     </div>
+    <div class="moodrow">
+      <span class="moodtag">{{ mood.tag }}</span>
+      <span class="moodsub">{{ mood.sub }}</span>
+    </div>
     <h1 class="headline">{{ headline | safe }}</h1>
-    <p class="lede">An automated read on the macro and energy markets, rebuilt every morning — every figure below comes with a plain-English explanation of what it is and why it matters.</p>
+    {% if changed %}<div class="changed"><span class=" chgk">Since yesterday</span>{{ changed }}</div>{% endif %}
 
     <div class="stats">
       {% for s in hero_stats %}
@@ -185,10 +245,73 @@
         <div class="l">{{ s.label }}</div>
         <div class="n"><span class="count" data-target="{{ s.raw }}" data-nd="{{ s.nd }}">{{ s.last }}</span>{% if s.unit %}<small>{{ s.unit }}</small>{% endif %}</div>
         <div class="d {{ s.dir }}">{{ s.chg }}</div>
+        {% if s.range %}<div class="rangebar"><i style="left:{{ s.range.pct }}%"></i></div>
+        <div class="rangelbl"><span>{{ s.range.lo }}</span><span>90d range</span><span>{{ s.range.hi }}</span></div>{% endif %}
       </div>
       {% endfor %}
     </div>
   </section>
+
+  {% if notable %}
+  <div class="sec rise">Notable today</div>
+  <div class="notable rise">
+    {% for n in notable %}
+    <div class="ntitem">
+      <span class="ntnum">{{ '%02d'|format(loop.index) }}</span>
+      <span class="nttxt">{{ n }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="sec rise">Market structure</div>
+  <div class="structure">
+    <div class="panel curve rise">
+      <h3>{{ yield_curve.title }}{% if yield_curve.inverted %}<span class="invtag">INVERTED</span>{% endif %}</h3>
+      {{ yield_curve.html | safe }}
+      {% if yield_curve.prior_date %}<div class="subnote">Dotted line: curve as of {{ yield_curve.prior_date }}</div>{% endif %}
+    </div>
+    <div class="panel gauge rise">
+      <h3>Risk regime</h3>
+      {{ risk_gauge.html | safe }}
+      <div class="gaugelbl">{{ mood.tag }}</div>
+      <div class="subnote" style="text-align:center;margin-top:-2px">({{ risk_gauge.label }})</div>
+      <div class="subnote">Rules-based tally of VIX, credit, dollar &amp; curve momentum — not a black box.</div>
+    </div>
+  </div>
+
+  {% if calendar or headlines %}
+  <div class="sec rise">Big events</div>
+  <div class="structure">
+    <div class="panel rise">
+      <h3>On the calendar</h3>
+      {% if calendar %}
+      <table class="tbl">
+        {% for e in calendar %}
+        <tr>
+          <td class="nm">{{ e.name }}</td>
+          <td class="c" style="width:auto;text-align:right;color:var(--t2)">{{ e.when }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}<div class="subnote">No high-impact releases in the next two weeks.</div>{% endif %}
+      <div class="subnote">Source: FRED release calendar — non-farm payrolls, CPI, PCE, GDP, FOMC, PPI, retail sales.</div>
+    </div>
+    <div class="panel rise">
+      <h3>Energy headlines</h3>
+      {% if headlines %}
+      <div class="headlines">
+        {% for h in headlines %}
+        <a class="hl" href="{{ h.link }}" target="_blank" rel="noopener">
+          <span class="hlt">{{ h.title }}</span>
+          <span class="hlm">{{ h.source }}{% if h.published %} · {{ h.published }}{% endif %}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}<div class="subnote">Headlines unavailable right now.</div>{% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="sec rise">Market data</div>
   <div class="grid">
