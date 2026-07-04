@@ -8,16 +8,16 @@
   },
   {
     "name": "open_meteo",
-    "status": "empty",
-    "rows": 0,
-    "as_of": "",
-    "message": "RuntimeError: GET failed after 3 tries: https://api.open-meteo.com/v1/forecast :: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=30)"
+    "status": "ok",
+    "rows": 20,
+    "as_of": "2026-07-04",
+    "message": ""
   },
   {
     "name": "singapore",
     "status": "ok",
     "rows": 2,
-    "as_of": "2026-07-04",
+    "as_of": "2026-07-05",
     "message": ""
   }
 ]
