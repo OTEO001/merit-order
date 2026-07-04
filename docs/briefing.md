@@ -1,6 +1,6 @@
 # Merit Order — Morning Briefing
 
-*As of 2026-07-03 08:02 +08*
+*As of 2026-07-04 08:03 +08*
 
 ## Today in one line
 Notable: 1 series moved beyond their 90-day range — see Flags below. Macro backdrop reads **neutral / mixed**: US 10y **4.48%**, 2s10s **31 bp**, VIX **16.59**. Gas at 3.51 $/MMBtu implies a CCGT breakeven power price near **24.57 $/MWh**.
@@ -9,7 +9,7 @@ Notable: 1 series moved beyond their 90-day range — see Flags below. Macro bac
 US Treasurys — 2y **4.17%**, 10y **4.48%** (4 bp d/d). The 2s10s slope sits at **31 bp**. The 10y **real** yield is **2.25%** with breakeven inflation at **2.23%**. Real yields are the single most important macro input for capital-heavy energy: they set the discount rate on every renewable project and PPA.
 
 ## Dollar, credit & risk
-Broad dollar index **119.28** (-0.35 d/d) - EUR/USD **1.0888** - USD/JPY **150.22**. Credit - high-yield OAS **2.74%**, investment-grade OAS **0.76%**; equity vol (VIX) **16.59** (0.14 d/d). Net of vol, credit, the dollar and the curve, the cross-asset regime reads **neutral / mixed** (score -1.0).
+Broad dollar index **119.28** (-0.35 d/d) - EUR/USD **1.0888** - USD/JPY **150.22**. Credit - high-yield OAS **2.75%**, investment-grade OAS **0.75%**; equity vol (VIX) **16.59** (0.14 d/d). Net of vol, credit, the dollar and the curve, the cross-asset regime reads **neutral / mixed** (score -1.0).
 
 ## Gas & LNG
 Henry Hub spot **3.51 $/MMBtu** (0.02 d/d). This anchors the marginal cost of gas-fired power across most developed grids and feeds every spread below.
