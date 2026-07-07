@@ -2,8 +2,8 @@
   {
     "name": "fred",
     "status": "ok",
-    "rows": 6417,
-    "as_of": "2026-07-06",
+    "rows": 6432,
+    "as_of": "2026-07-07",
     "message": ""
   },
   {
@@ -17,7 +17,7 @@
     "name": "singapore",
     "status": "ok",
     "rows": 2,
-    "as_of": "2026-07-07",
+    "as_of": "2026-07-08",
     "message": ""
   }
 ]
