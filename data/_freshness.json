@@ -2,22 +2,22 @@
   {
     "name": "fred",
     "status": "ok",
-    "rows": 6454,
-    "as_of": "2026-08-17",
+    "rows": 6469,
+    "as_of": "2026-08-18",
     "message": ""
   },
   {
     "name": "open_meteo",
     "status": "ok",
     "rows": 20,
-    "as_of": "2026-08-17",
+    "as_of": "2026-08-18",
     "message": ""
   },
   {
     "name": "singapore",
     "status": "ok",
     "rows": 2,
-    "as_of": "2026-08-18",
+    "as_of": "2026-08-19",
     "message": ""
   }
 ]
