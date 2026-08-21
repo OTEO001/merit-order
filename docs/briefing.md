@@ -1,15 +1,15 @@
 # Merit Order — Morning Briefing
 
-*As of 2026-08-21 07:20 +08*
+*As of 2026-08-22 07:18 +08*
 
 ## Today in one line
-Quiet tape — no series outside its 90-day statistical range. Macro backdrop reads **neutral / mixed**: US 10y **4.65%**, 2s10s **46 bp**, VIX **14.89**. Gas at 2.82 $/MMBtu implies a CCGT breakeven power price near **19.74 $/MWh**.
+Quiet tape — no series outside its 90-day statistical range. Macro backdrop reads **neutral / mixed**: US 10y **4.69%**, 2s10s **50 bp**, VIX **16.01**. Gas at 2.82 $/MMBtu implies a CCGT breakeven power price near **19.74 $/MWh**.
 
 ## Rates & the curve
-US Treasurys — 2y **4.19%**, 10y **4.65%** (-6 bp d/d). The 2s10s slope sits at **46 bp**. The 10y **real** yield is **2.35%** with breakeven inflation at **2.34%**. Real yields are the single most important macro input for capital-heavy energy: they set the discount rate on every renewable project and PPA.
+US Treasurys — 2y **4.19%**, 10y **4.69%** (4 bp d/d). The 2s10s slope sits at **50 bp**. The 10y **real** yield is **2.35%** with breakeven inflation at **2.34%**. Real yields are the single most important macro input for capital-heavy energy: they set the discount rate on every renewable project and PPA.
 
 ## Dollar, credit & risk
-Broad dollar index **118.90** (-0.28 d/d) - EUR/USD **1.1581** - USD/JPY **159.21**. Credit - high-yield OAS **2.73%**, investment-grade OAS **0.81%**; equity vol (VIX) **14.89** (-0.95 d/d). Net of vol, credit, the dollar and the curve, the cross-asset regime reads **neutral / mixed** (score -1.0).
+Broad dollar index **118.90** (-0.28 d/d) - EUR/USD **1.1581** - USD/JPY **159.21**. Credit - high-yield OAS **2.75%**, investment-grade OAS **0.82%**; equity vol (VIX) **16.01** (1.12 d/d). Net of vol, credit, the dollar and the curve, the cross-asset regime reads **neutral / mixed** (score -1.0).
 
 ## Gas & LNG
 Henry Hub spot **2.82 $/MMBtu** (0.05 d/d). This anchors the marginal cost of gas-fired power across most developed grids and feeds every spread below.
@@ -25,7 +25,7 @@ At a 7.0 heat rate, the gas SRMC (breakeven power price) is **19.74 $/MWh**. Wit
 **Real yields vs renewables:** at today's 10y real yield of 2.35%, a stylised utility-scale solar build levelises to **~71.1 $/MWh**; a +100 bp move in real yields lifts that to **~76.7 $/MWh** (**+5.6**). That is the macro-to-transition-finance transmission in one number: the cost of capital, not panel prices, is what moves renewable economics here.
 
 ## Fundamentals - weather
-Cooling pressure (CDD, sampled points): **40.4** - heating pressure (HDD): **0.0**. Modelled wind output proxy: **10%** of rated. Low wind alongside weak irradiance is the Dunkelflaute setup that lifts gas and coal reliance.
+Cooling pressure (CDD, sampled points): **38.6** - heating pressure (HDD): **0.1**. Modelled wind output proxy: **4%** of rated. Low wind alongside weak irradiance is the Dunkelflaute setup that lifts gas and coal reliance.
 
 
 ## Flags
