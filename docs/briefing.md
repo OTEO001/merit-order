@@ -1,6 +1,6 @@
 # Merit Order — Morning Briefing
 
-*As of 2026-09-07 08:38 +08*
+*As of 2026-09-08 08:55 +08*
 
 ## Today in one line
 Quiet tape — no series outside its 90-day statistical range. Macro backdrop reads **risk-on**: US 10y **4.77%**, 2s10s **43 bp**, VIX **14.32**. Gas at 2.90 $/MMBtu implies a CCGT breakeven power price near **20.30 $/MWh**.
