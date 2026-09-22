@@ -1,15 +1,15 @@
 # Merit Order — Morning Briefing
 
-*As of 2026-09-21 08:47 +08*
+*As of 2026-09-22 09:23 +08*
 
 ## Today in one line
-Notable: 1 series moved beyond their 90-day range — see Flags below. Macro backdrop reads **neutral / mixed**: US 10y **4.94%**, 2s10s **27 bp**, VIX **15.44**. Gas at 2.97 $/MMBtu implies a CCGT breakeven power price near **20.79 $/MWh**.
+Notable: 1 series moved beyond their 90-day range — see Flags below. Macro backdrop reads **neutral / mixed**: US 10y **5.01%**, 2s10s **25 bp**, VIX **14.81**. Gas at 2.97 $/MMBtu implies a CCGT breakeven power price near **20.79 $/MWh**.
 
 ## Rates & the curve
-US Treasurys — 2y **4.67%**, 10y **4.94%** (-7 bp d/d). The 2s10s slope sits at **27 bp**. The 10y **real** yield is **2.61%** with breakeven inflation at **2.33%**. Real yields are the single most important macro input for capital-heavy energy: they set the discount rate on every renewable project and PPA.
+US Treasurys — 2y **4.76%**, 10y **5.01%** (7 bp d/d). The 2s10s slope sits at **25 bp**. The 10y **real** yield is **2.68%** with breakeven inflation at **2.34%**. Real yields are the single most important macro input for capital-heavy energy: they set the discount rate on every renewable project and PPA.
 
 ## Dollar, credit & risk
-Broad dollar index **118.21** (0.13 d/d) - EUR/USD **1.1604** - USD/JPY **153.71**. Credit - high-yield OAS **2.70%**, investment-grade OAS **0.78%**; equity vol (VIX) **15.44** (-2.27 d/d). Net of vol, credit, the dollar and the curve, the cross-asset regime reads **neutral / mixed** (score 0.0).
+Broad dollar index **119.51** (0.16 d/d) - EUR/USD **1.1464** - USD/JPY **156.87**. Credit - high-yield OAS **2.68%**, investment-grade OAS **0.77%**; equity vol (VIX) **14.81** (-0.63 d/d). Net of vol, credit, the dollar and the curve, the cross-asset regime reads **neutral / mixed** (score 0.0).
 
 ## Gas & LNG
 Henry Hub spot **2.97 $/MMBtu** (0.12 d/d). This anchors the marginal cost of gas-fired power across most developed grids and feeds every spread below.
@@ -21,11 +21,11 @@ Brent **130.80 $/bbl** (9.55 d/d) - WTI **107.02 $/bbl** (4.60 d/d). The Brent-W
 At a 7.0 heat rate, the gas SRMC (breakeven power price) is **20.79 $/MWh**. With a power feed wired in, this becomes a live clean spark spread. Fuel-switching carbon price: **-16.1 $/tonne** - above this, the merit order favours gas over coal (carbon assumption 0.0 $/tonne).
 
 ## Cross-asset read for energy
-**Dollar vs crude:** the trailing 0.12 correlation between daily moves in the broad dollar and Brent quantifies the textbook inverse link - a firmer dollar is a headwind for the whole commodity complex priced in USD.
-**Real yields vs renewables:** at today's 10y real yield of 2.61%, a stylised utility-scale solar build levelises to **~72.5 $/MWh**; a +100 bp move in real yields lifts that to **~78.2 $/MWh** (**+5.6**). That is the macro-to-transition-finance transmission in one number: the cost of capital, not panel prices, is what moves renewable economics here.
+**Dollar vs crude:** the trailing 0.21 correlation between daily moves in the broad dollar and Brent quantifies the textbook inverse link - a firmer dollar is a headwind for the whole commodity complex priced in USD.
+**Real yields vs renewables:** at today's 10y real yield of 2.68%, a stylised utility-scale solar build levelises to **~72.9 $/MWh**; a +100 bp move in real yields lifts that to **~78.6 $/MWh** (**+5.6**). That is the macro-to-transition-finance transmission in one number: the cost of capital, not panel prices, is what moves renewable economics here.
 
 ## Fundamentals - weather
-Cooling pressure (CDD, sampled points): **30.0** - heating pressure (HDD): **4.1**. Modelled wind output proxy: **2%** of rated. Low wind alongside weak irradiance is the Dunkelflaute setup that lifts gas and coal reliance.
+Cooling pressure (CDD, sampled points): **30.8** - heating pressure (HDD): **3.6**. Modelled wind output proxy: **0%** of rated. Low wind alongside weak irradiance is the Dunkelflaute setup that lifts gas and coal reliance.
 
 
 ## Flags
