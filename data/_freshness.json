@@ -2,7 +2,7 @@
   {
     "name": "fred",
     "status": "ok",
-    "rows": 6414,
+    "rows": 6392,
     "as_of": "2026-09-25",
     "message": ""
   },
@@ -10,14 +10,14 @@
     "name": "open_meteo",
     "status": "ok",
     "rows": 20,
-    "as_of": "2026-09-26",
+    "as_of": "2026-09-27",
     "message": ""
   },
   {
     "name": "singapore",
     "status": "ok",
     "rows": 2,
-    "as_of": "2026-09-26",
+    "as_of": "2026-09-27",
     "message": ""
   }
 ]
