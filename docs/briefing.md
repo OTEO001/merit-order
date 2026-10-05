@@ -1,6 +1,6 @@
 # Merit Order — Morning Briefing
 
-*As of 2026-10-04 10:20 +08*
+*As of 2026-10-05 09:30 +08*
 
 ## Today in one line
 Quiet tape — no series outside its 90-day statistical range. Macro backdrop reads **neutral / mixed**: US 10y **5.24%**, 2s10s **46 bp**, VIX **16.39**. Gas at 3.18 $/MMBtu implies a CCGT breakeven power price near **22.26 $/MWh**.
@@ -25,7 +25,7 @@ At a 7.0 heat rate, the gas SRMC (breakeven power price) is **22.26 $/MWh**. Wit
 **Real yields vs renewables:** at today's 10y real yield of 2.88%, a stylised utility-scale solar build levelises to **~74.0 $/MWh**; a +100 bp move in real yields lifts that to **~79.7 $/MWh** (**+5.7**). That is the macro-to-transition-finance transmission in one number: the cost of capital, not panel prices, is what moves renewable economics here.
 
 ## Fundamentals - weather
-Cooling pressure (CDD, sampled points): **20.8** - heating pressure (HDD): **3.4**. Modelled wind output proxy: **4%** of rated. Low wind alongside weak irradiance is the Dunkelflaute setup that lifts gas and coal reliance.
+Cooling pressure (CDD, sampled points): **19.8** - heating pressure (HDD): **4.9**. Modelled wind output proxy: **6%** of rated. Low wind alongside weak irradiance is the Dunkelflaute setup that lifts gas and coal reliance.
 
 
 ## Flags
